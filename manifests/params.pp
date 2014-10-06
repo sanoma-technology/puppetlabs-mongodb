@@ -5,6 +5,8 @@ class mongodb::params inherits mongodb::globals {
   $service_ensure   = pick($service_ensure, 'running')
   $service_status   = $service_status
   $ensure_client    = true
+  $store_creds      = true
+  $rcfile           = "${::root_home}/.mongorc.js"
 
   # Amazon Linux's OS Family is 'Linux', operating system 'Amazon'.
   case $::osfamily {
@@ -25,6 +27,7 @@ class mongodb::params inherits mongodb::globals {
         $dbpath      = '/var/lib/mongodb'
         $logpath     = '/var/log/mongodb/mongod.log'
         $pidfilepath = '/var/run/mongodb/mongod.pid'
+        $rcfile      = "${::root_home}/.mongorc.js"
         $bind_ip     = pick($bind_ip, ['127.0.0.1'])
         $fork        = true
       } else {

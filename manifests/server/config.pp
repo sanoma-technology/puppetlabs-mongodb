@@ -17,6 +17,10 @@ class mongodb::server::config {
   $cpu             = $mongodb::server::cpu
   $auth            = $mongodb::server::auth
   $noath           = $mongodb::server::noauth
+  $admin_username  = $mongodb::server::admin_username
+  $admin_password  = $mongodb::server::admin_password
+  $store_creds     = $mongodb::server::store_creds
+  $rcfile          = $mongodb::server::rcfile
   $verbose         = $mongodb::server::verbose
   $verbositylevel  = $mongodb::server::verbositylevel
   $objcheck        = $mongodb::server::objcheck
@@ -79,6 +83,7 @@ class mongodb::server::config {
       group   => $group,
       require => File[$config]
     }
+
   } else {
     file { $dbpath:
       ensure => absent,
@@ -89,4 +94,19 @@ class mongodb::server::config {
       ensure => absent
     }
   }
+
+  if $store_creds {
+    file { $rcfile:
+      content => template('mongodb/mongorc.js.erb'),
+      owner   => 'root',
+      group   => 'root',
+      mode    => '0644',
+    }
+  }
+  else {
+    file { $rcfile:
+      ensure => absent,
+    }
+  }
+
 }

@@ -1,0 +1,22 @@
+function authRequired() {
+    try {
+      if (db.serverCmdLineOpts().code == 13) {
+        return true;
+      }
+      return false;
+    }
+    catch (err) {
+      //if (++count == retries) return false;
+      //sleep(2);
+      return false;
+    }
+}
+
+if (authRequired()) {
+  try {
+    db.auth('<%= @admin_username %>', '<%= @admin_password %>');
+  }
+  catch (err) {
+    return;
+  }
+}

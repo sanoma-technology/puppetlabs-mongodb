@@ -8,6 +8,7 @@ class mongodb::server (
   $config           = $mongodb::params::config,
   $dbpath           = $mongodb::params::dbpath,
   $pidfilepath      = $mongodb::params::pidfilepath,
+  $rcfile           = $mongodb::params::rcfile,
 
   $service_provider = $mongodb::params::service_provider,
   $service_name     = $mongodb::params::service_name,
@@ -29,6 +30,9 @@ class mongodb::server (
   $cpu             = undef,
   $auth            = false,
   $noauth          = undef,
+  $admin_username  = undef,
+  $admin_password  = undef,
+  $store_creds     = false,
   $verbose         = undef,
   $verbositylevel  = undef,
   $objcheck        = undef,
@@ -61,7 +65,6 @@ class mongodb::server (
   $only            = undef,
   $source          = undef,
 ) inherits mongodb::params {
-
 
   if ($ensure == 'present' or $ensure == true) {
     anchor { 'mongodb::server::start': }->

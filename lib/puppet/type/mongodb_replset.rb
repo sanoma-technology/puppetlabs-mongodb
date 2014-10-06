@@ -25,11 +25,27 @@ Puppet::Type.newtype(:mongodb_replset) do
     end
   end
 
+  newproperty(:admin_username) do
+    desc "The admin username"
+
+    def insync?(is)
+      is.downcase == should.downcase
+    end
+  end
+
+  newproperty(:admin_password) do
+    desc "The admin password"
+  end
+
   autorequire(:package) do
     'mongodb_client'
   end
 
   autorequire(:service) do
+    'mongodb'
+  end
+
+  autorequire(:mongodb_conn_validator) do
     'mongodb'
   end
 end
