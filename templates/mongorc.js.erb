@@ -1,15 +1,13 @@
 function authRequired() {
-    try {
-      if (db.serverCmdLineOpts().code == 13) {
-        return true;
-      }
-      return false;
+  try {
+    if (db.serverCmdLineOpts().code == 13) {
+      return true;
     }
-    catch (err) {
-      //if (++count == retries) return false;
-      //sleep(2);
-      return false;
-    }
+    return false;
+  }
+  catch (err) {
+    return false;
+  }
 }
 
 if (authRequired()) {
@@ -17,6 +15,7 @@ if (authRequired()) {
     db.auth('<%= @admin_username %>', '<%= @admin_password %>');
   }
   catch (err) {
+    // This isn't catching authentication errors as I'd expect...
     return;
   }
 }
