@@ -70,11 +70,11 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
       # Because hashes are unordered, and the 'createUser' must come first, we
       # can't use .to_json to generate the whole command.
       cmd = "{" +
-            "createUser: \"#{@resource[:username]}\"," +
-            "pwd: \"#{@resource[:password_hash]}\"," +
-            "digestPassword: false," +
-            "customData: #{custom_data.to_json}," +
-            "roles: #{@resource[:roles].to_json}" +
+            "createUser:\"#{@resource[:username]}\"," +
+            "pwd:\"#{@resource[:password_hash]}\"," +
+            "digestPassword:false," +
+            "customData:#{custom_data.to_json}," +
+            "roles:#{@resource[:roles].to_json}" +
             "}"
 
       mongo_eval("db.runCommand(#{cmd})", @resource[:database])
@@ -104,9 +104,9 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
 
   def password_hash=(value)
     cmd = "{" +
-          "updateUser: \"#{@resource[:username]}\"," +
-          "pwd: \"#{@resource[:password_hash]}\"," +
-          "digestPassword: false",
+          "updateUser:\"#{@resource[:username]}\"," +
+          "pwd:\"#{@resource[:password_hash]}\"," +
+          "digestPassword:false",
           "}"
 
     mongo_eval("db.runCommand(#{cmd})", @resource[:database])
