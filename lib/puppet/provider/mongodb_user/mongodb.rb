@@ -64,21 +64,27 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
 
       mongo_eval("db.addUser(#{user.to_json})", @resource[:database])
     else
-      user = {
-        :user => @resource[:username],
-        :pwd => @resource[:password_hash],
-        :customData => { :createdBy => "Puppet Mongodb_user['#{@resource[:name]}']" },
-        :roles => @resource[:roles]
+      custom_data = {
+        :createdBy => "Puppet Mongodb_user['#{@resource[:name]}']"
       }
+      # Because hashes are unordered, and the 'createUser' must come first, we
+      # can't use .to_json to generate the whole command.
+      cmd = "{" +
+            "createUser: \"#{@resource[:username]}\"," +
+            "pwd: \"#{@resource[:password_hash]}\"," +
+            "digestPassword: false," +
+            "customData: #{custom_data.to_json}," +
+            "roles: #{@resource[:roles].to_json}" +
+            "}"
 
-      mongo_eval("db.createUser(#{user.to_json})", @resource[:database])
+      mongo_eval("db.runCommand(#{cmd})", @resource[:database])
     end
 
     @property_hash[:ensure] = :present
     @property_hash[:username] = @resource[:username]
     @property_hash[:database] = @resource[:database]
-    @property_hash[:password_hash] = ''
-    @property_hash[:rolse] = @resource[:roles]
+    @property_hash[:password_hash] = @resource[:password_hash]
+    @property_hash[:roles] = @resource[:roles]
 
     exists? ? (return true) : (return false)
   end
@@ -97,13 +103,13 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
   end
 
   def password_hash=(value)
-    cmd = {
-        :updateUser => @resource[:username],
-        :pwd => @resource[:password_hash],
-        :digestPassword => false
-    }
+    cmd = "{" +
+          "updateUser: \"#{@resource[:username]}\"," +
+          "pwd: \"#{@resource[:password_hash]}\"," +
+          "digestPassword: false",
+          "}"
 
-    mongo_eval("db.runCommand(#{cmd.to_json})", @resource[:database])
+    mongo_eval("db.runCommand(#{cmd})", @resource[:database])
   end
 
   def roles=(roles)

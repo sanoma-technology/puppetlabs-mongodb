@@ -19,11 +19,15 @@ class Puppet::Provider::Mongodb < Puppet::Provider
 
   # Mongo Command Wrapper
   def self.mongo_eval(cmd, db = 'admin')
+    # As a different database could have been selected in .mongodb.js, make
+    # sure it is reset before running any commands.
+    cmd = "db = db.getSiblingDB(\"#{db}\"); " + cmd
+
     if mongorc_file
         cmd = mongorc_file + cmd
     end
 
-    out = mongo([db, '--quiet', '--eval', cmd])
+    out = mongo(['--quiet', '--eval', cmd])
 
     out.gsub!(/ObjectId\(([^)]*)\)/, '\1')
     out
