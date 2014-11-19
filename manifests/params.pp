@@ -1,9 +1,12 @@
 # PRIVATE CLASS: do not use directly
 class mongodb::params inherits mongodb::globals {
-  $ensure                = true
-  $service_enable        = pick($mongodb::globals::service_enable, true)
-  $service_ensure        = pick($mongodb::globals::service_ensure, 'running')
-  $service_status        = $mongodb::globals::service_status
+  $ensure           = true
+  $service_enable   = pick($service_enable, true)
+  $service_ensure   = pick($service_ensure, 'running')
+  $service_status   = $service_status
+  $ensure_client    = true
+  $store_creds      = true
+  $rcfile           = "${::root_home}/.mongorc.js"
 
   # Amazon Linux's OS Family is 'Linux', operating system 'Amazon'.
   case $::osfamily {
@@ -32,12 +35,13 @@ class mongodb::params inherits mongodb::globals {
           }
         }
         $service_name = pick($::mongodb::globals::service_name, 'mongod')
-        $config       = '/etc/mongod.conf'
-        $dbpath       = '/var/lib/mongodb'
-        $logpath      = '/var/log/mongodb/mongod.log'
-        $pidfilepath  = '/var/run/mongodb/mongod.pid'
-        $bind_ip      = pick($::mongodb::globals::bind_ip, ['127.0.0.1'])
-        $fork         = true
+        $config      = '/etc/mongod.conf'
+        $dbpath      = '/var/lib/mongodb'
+        $logpath     = '/var/log/mongodb/mongod.log'
+        $pidfilepath = '/var/run/mongodb/mongod.pid'
+        $rcfile      = "${::root_home}/.mongorc.js"
+        $bind_ip     = pick($bind_ip, ['127.0.0.1'])
+        $fork        = true
       } else {
         # RedHat/CentOS doesn't come with a prepacked mongodb
         # so we assume that you are using EPEL repository.
