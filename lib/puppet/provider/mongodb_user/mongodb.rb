@@ -74,7 +74,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
             "roles:#{@resource[:roles].to_json}" +
             "}"
 
-      mongo_eval("db.runCommand(#{cmd})", @resource[:database])
+      mongo_command("db.runCommand(#{cmd})", @resource[:database])
     end
 
     @property_hash[:ensure] = :present
@@ -106,7 +106,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
           "digestPassword:false",
           "}"
 
-    mongo_eval("db.runCommand(#{cmd})", @resource[:database])
+    mongo_command("db.runCommand(#{cmd})", @resource[:database])
   end
 
   def roles=(roles)

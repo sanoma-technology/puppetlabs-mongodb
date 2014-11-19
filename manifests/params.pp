@@ -6,7 +6,6 @@ class mongodb::params inherits mongodb::globals {
   $service_status   = $service_status
   $ensure_client    = true
   $store_creds      = true
-  $rcfile           = "${::root_home}/.mongorc.js"
 
   # Amazon Linux's OS Family is 'Linux', operating system 'Amazon'.
   case $::osfamily {
