@@ -41,6 +41,11 @@ class Puppet::Provider::Mongodb < Puppet::Provider
       command = "printjson(#{command})"
     end
 
+    # In case the current database was changed in .mongorc.js, ensure the
+    # correct one is set here.
+    db = args_hash['db'] || 'admin'
+    command = "db = db.getSiblingDB('#{db}'); #{command}"
+
     # Prepend rc file execution to allow for authentication
     unless args_hash['rc'] == false
       command = "#{mongorc_command}; #{command}"
@@ -54,7 +59,6 @@ class Puppet::Provider::Mongodb < Puppet::Provider
       args << '--quiet'
 
       # Default to running commands in the admin database
-      args << (args_hash['db'] || 'admin')
       args << ['--host', args_hash['host']] if args_hash['host']
       args << ['--eval', command]
       output = mongo(args.flatten)
