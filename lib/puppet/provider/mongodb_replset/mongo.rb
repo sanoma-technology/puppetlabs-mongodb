@@ -1,8 +1,9 @@
 #
 # Author: François Charlier <francois.charlier@enovance.com>
 #
+require File.expand_path(File.join(File.dirname(__FILE__), '..', 'mongodb'))
 
-Puppet::Type.type(:mongodb_replset).provide(:mongo) do
+Puppet::Type.type(:mongodb_replset).provide(:mongodb, :parent => Puppet::Provider::Mongodb) do
 
   desc "Manage hosts members for a replicaset."
 
@@ -202,11 +203,16 @@ Puppet::Type.type(:mongodb_replset).provide(:mongo) do
     # Allow waiting for mongod to become ready
     # Wait for 2 seconds initially and double the delay at each retry
     wait = 2
+    cmd = "printjson(#{command})"
+    if mongorc_file
+        cmd = mongorc_file + cmd
+    end
+
     begin
       args = Array.new
       args << '--quiet'
       args << ['--host',host] if host
-      args << ['--eval',"printjson(#{command})"]
+      args << ['--eval',cmd]
       output = mongo(args.flatten)
     rescue Puppet::ExecutionFailure => e
       if e =~ /Error: couldn't connect to server/ and wait <= 2**max_wait
