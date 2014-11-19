@@ -91,10 +91,8 @@ class Puppet::Provider::Mongodb < Puppet::Provider
   end
 
   def self.parse_as_json(str = "")
-
     # Avoid non-json empty sets
-    str = "{}" if str == "null\n"
-   warning("NILL!!!!!!!!") if ! str
+    str = "{}" if str == nil or str == "null\n"
     # Remove JavaScript objects
     str.gsub!(/ObjectId\(([^)]*)\)/, '\1')
     str.gsub!(/ISODate\((.+?)\)/, '\1 ')

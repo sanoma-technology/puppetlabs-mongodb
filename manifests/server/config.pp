@@ -113,10 +113,5 @@ class mongodb::server::config {
       mode    => '0644',
     }
   }
-  else {
-    file { $rcfile:
-      ensure => absent,
-    }
-  }
 
 }
