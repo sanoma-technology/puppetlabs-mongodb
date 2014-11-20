@@ -66,7 +66,8 @@ Puppet::Type.type(:mongodb_replset).provide(:mongodb, :parent => Puppet::Provide
   private
 
   def db_ismaster(host)
-    mongo_command('db.isMaster().primary', {'host' => host})
+    output = mongo_command('db.isMaster()', {'host' => host})
+    output['primary']
   end
 
   def rs_initiate(conf, master)
@@ -194,7 +195,7 @@ Puppet::Type.type(:mongodb_replset).provide(:mongodb, :parent => Puppet::Provide
       # Add members to an existing replset
       if master = master_host(alive_hosts)
         current_hosts = db_ismaster(master)
-        newhosts = alive_hosts - current_hosts
+        newhosts = alive_hosts - [current_hosts]
         newhosts.each do |host|
           output = rs_add(host, master)
           if output['ok'] == 0
