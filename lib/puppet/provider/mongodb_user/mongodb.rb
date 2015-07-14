@@ -6,13 +6,15 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
   defaultfor :kernel => 'Linux'
 
   def self.instances
+    require 'json'
+
     if mongo_24?
-      dbs = mongo_command('db.getMongo().getDBs()["databases"].map(function(db){return db["name"]})') || 'admin'
+      dbs = JSON.parse mongo_eval('printjson(db.getMongo().getDBs()["databases"].map(function(db){return db["name"]}))') || 'admin'
 
       allusers = []
 
       dbs.each do |db|
-        users = mongo_command('db.system.users.find().toArray()', {'db' => db, 'retries' => 5})
+        users = JSON.parse mongo_eval('printjson(db.system.users.find().toArray())', db)
 
         allusers += users.collect do |user|
             new(:name          => user['_id'],
@@ -25,7 +27,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
       end
       return allusers
     else
-      users = mongo_command('db.system.users.find().toArray()', {'retries' => 5})
+      users = JSON.parse mongo_eval('printjson(db.system.users.find().toArray())')
 
       users.collect do |user|
           new(:name          => user['_id'],
@@ -52,6 +54,7 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
 
   def create
 
+
     if mongo_24?
       user = {
         :user => @resource[:username],
@@ -59,28 +62,25 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
         :roles => @resource[:roles]
       }
 
-      mongo_command("db.addUser(#{user.to_json})", {'db' => @resource[:database]})
+      mongo_eval("db.addUser(#{user.to_json})", @resource[:database])
     else
-      custom_data = {
-        :createdBy => "Puppet Mongodb_user['#{@resource[:name]}']"
+      cmd_json=<<-EOS.gsub(/^\s*/, '').gsub(/$\n/, '')
+      {
+        "createUser": "#{@resource[:username]}",
+        "pwd": "#{@resource[:password_hash]}",
+        "customData": {"createdBy": "Puppet Mongodb_user['#{@resource[:name]}']"},
+        "roles": #{@resource[:roles].to_json},
+        "digestPassword": false
       }
-      # Because hashes are unordered, and the 'createUser' must come first, we
-      # can't use .to_json to generate the whole command.
-      cmd = "{" +
-            "createUser:\"#{@resource[:username]}\"," +
-            "pwd:\"#{@resource[:password_hash]}\"," +
-            "digestPassword:false," +
-            "customData:#{custom_data.to_json}," +
-            "roles:#{@resource[:roles].to_json}" +
-            "}"
+      EOS
 
-      mongo_command("db.runCommand(#{cmd})", {'db' => @resource[:database]})
+      mongo_eval("db.runCommand(#{cmd_json})", @resource[:database])
     end
 
     @property_hash[:ensure] = :present
     @property_hash[:username] = @resource[:username]
     @property_hash[:database] = @resource[:database]
-    @property_hash[:password_hash] = @resource[:password_hash]
+    @property_hash[:password_hash] = ''
     @property_hash[:roles] = @resource[:roles]
 
     exists? ? (return true) : (return false)
@@ -89,9 +89,9 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
 
   def destroy
     if mongo_24?
-      mongo_command("db.removeUser('#{@resource[:username]}')")
+      mongo_eval("db.removeUser('#{@resource[:username]}')")
     else
-      mongo_command("db.dropUser('#{@resource[:username]}')")
+      mongo_eval("db.dropUser('#{@resource[:username]}')")
     end
   end
 
@@ -100,27 +100,29 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
   end
 
   def password_hash=(value)
-    cmd = "{" +
-          "updateUser:\"#{@resource[:username]}\"," +
-          "pwd:\"#{@resource[:password_hash]}\"," +
-          "digestPassword:false",
-          "}"
+    cmd_json=<<-EOS.gsub(/^\s*/, '').gsub(/$\n/, '')
+    {
+        "updateUser": "#{@resource[:username]}",
+        "pwd": "#{@resource[:password_hash]}",
+        "digestPassword": false
+    }
+    EOS
 
-    mongo_command("db.runCommand(#{cmd})", @resource[:database])
+    mongo_eval("db.runCommand(#{cmd_json})", @resource[:database])
   end
 
   def roles=(roles)
     if mongo_24?
-      mongo_command("db.system.users.update({user:'#{@resource[:username]}'}, { $set: {roles: #{@resource[:roles].to_json}}})")
+      mongo_eval("db.system.users.update({user:'#{@resource[:username]}'}, { $set: {roles: #{@resource[:roles].to_json}}})")
     else
       grant = roles-@resource[:roles]
       if grant.length > 0
-        mongo_command("db.getSiblingDB('#{@resource[:database]}').grantRolesToUser('#{@resource[:username]}', #{grant. to_json})")
+        mongo_eval("db.getSiblingDB('#{@resource[:database]}').grantRolesToUser('#{@resource[:username]}', #{grant. to_json})")
       end
 
       revoke = @resource[:roles]-roles
       if revoke.length > 0
-        mongo_command("db.getSiblingDB('#{@resource[:database]}').revokeRolesFromUser('#{@resource[:username]}', #{revoke.to_json})")
+        mongo_eval("db.getSiblingDB('#{@resource[:database]}').revokeRolesFromUser('#{@resource[:username]}', #{revoke.to_json})")
       end
     end
   end
@@ -129,11 +131,11 @@ Puppet::Type.type(:mongodb_user).provide(:mongodb, :parent => Puppet::Provider::
 
   def self.from_roles(roles, db)
     roles.map do |entry|
-      if entry['db'] == db
-        entry['role']
-      else
-        "#{entry['role']}@#{entry['db']}"
-      end
+        if entry['db'] == db
+            entry['role']
+        else
+            "#{entry['role']}@#{entry['db']}"
+        end
     end.sort
   end
 

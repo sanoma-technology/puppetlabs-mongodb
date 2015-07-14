@@ -65,8 +65,4 @@ Puppet::Type.newtype(:mongodb_user) do
   autorequire(:service) do
     'mongodb'
   end
-
-  autorequire(:mongodb_conn_validator) do
-    'mongodb'
-  end
 end

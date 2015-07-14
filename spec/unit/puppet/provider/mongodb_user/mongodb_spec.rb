@@ -39,18 +39,17 @@ describe Puppet::Type.type(:mongodb_user).provider(:mongodb) do
 
   describe 'create' do
     it 'creates a user' do
-      custom_data = { :createdBy => "Puppet Mongodb_user['new_user']" }
-      roles = ['role1','role2']
+      cmd_json=<<-EOS.gsub(/^\s*/, '').gsub(/$\n/, '')
+      {
+        "createUser": "new_user",
+        "pwd": "pass",
+        "customData": {"createdBy": "Puppet Mongodb_user['new_user']"},
+        "roles": ["role1","role2"],
+        "digestPassword": false
+      }
+      EOS
 
-      cmd = "{" +
-            "createUser:\"new_user\"," +
-            "pwd:\"pass\"," +
-            "digestPassword:false," +
-            "customData:#{custom_data.to_json}," +
-            "roles:#{roles.to_json}" +
-            "}"
-
-      provider.expects(:mongo_eval).with("db.runCommand(#{cmd})", 'new_database')
+      provider.expects(:mongo_eval).with("db.runCommand(#{cmd_json})", 'new_database')
       provider.create
     end
   end
@@ -64,32 +63,34 @@ describe Puppet::Type.type(:mongodb_user).provider(:mongodb) do
 
   describe 'exists?' do
     it 'checks if user exists' do
-      provider.exists?.should eql false
+      expect(provider.exists?).to eql false
     end
   end
 
   describe 'password_hash' do
     it 'returns a password_hash' do
-      instance.password_hash.should == "pass"
+      expect(instance.password_hash).to eq("pass")
     end
   end
 
   describe 'password_hash=' do
     it 'changes a password_hash' do
-      cmd = '{' +
-            'updateUser:"new_user",' +
-            'pwd:"newpass",' +
-            'digestPassword:false' +
-            '}'
+      cmd_json=<<-EOS.gsub(/^\s*/, '').gsub(/$\n/, '')
+      {
+          "updateUser": "new_user",
+          "pwd": "pass",
+          "digestPassword": false
+      }
+      EOS
       provider.expects(:mongo_eval).
-        with("db.runCommand(#{cmd})", 'new_database')
+        with("db.runCommand(#{cmd_json})", 'new_database')
       provider.password_hash=("newpass")
     end
   end
 
   describe 'roles' do
     it 'returns a sorted roles' do
-      instance.roles.should == ['role1', 'role2']
+      expect(instance.roles).to eq(['role1', 'role2'])
     end
   end
 

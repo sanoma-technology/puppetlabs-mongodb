@@ -8,8 +8,8 @@ class mongodb::server (
   $config           = $mongodb::params::config,
   $dbpath           = $mongodb::params::dbpath,
   $pidfilepath      = $mongodb::params::pidfilepath,
-  $rcfile           = $mongodb::params::rcfile,
 
+  $service_manage   = $mongodb::params::service_manage,
   $service_provider = $mongodb::params::service_provider,
   $service_name     = $mongodb::params::service_name,
   $service_enable   = $mongodb::params::service_enable,
@@ -21,18 +21,16 @@ class mongodb::server (
 
   $logpath         = $mongodb::params::logpath,
   $bind_ip         = $mongodb::params::bind_ip,
+  $ipv6            = undef,
   $logappend       = true,
   $fork            = $mongodb::params::fork,
-  $port            = 27017,
+  $port            = undef,
   $journal         = $mongodb::params::journal,
   $nojournal       = undef,
   $smallfiles      = undef,
   $cpu             = undef,
   $auth            = false,
   $noauth          = undef,
-  $admin_username  = undef,
-  $admin_password  = undef,
-  $store_creds     = false,
   $verbose         = undef,
   $verbositylevel  = undef,
   $objcheck        = undef,
@@ -53,13 +51,20 @@ class mongodb::server (
   $mms_name        = undef,
   $mms_interval    = undef,
   $replset         = undef,
+  $configsvr       = undef,
+  $shardsvr        = undef,
   $rest            = undef,
+  $quiet           = undef,
   $slowms          = undef,
   $keyfile         = undef,
+  $key             = undef,
   $set_parameter   = undef,
   $syslog          = undef,
-  
   $config_content  = undef,
+  $ssl             = undef,
+  $ssl_key         = undef,
+  $ssl_ca          = undef,
+  $restart         = $mongodb::params::restart,
 
   # Deprecated parameters
   $master          = undef,
@@ -68,17 +73,32 @@ class mongodb::server (
   $source          = undef,
 ) inherits mongodb::params {
 
+
+  if $ssl {
+    validate_string($ssl_key, $ssl_ca)
+  }
+
   if ($ensure == 'present' or $ensure == true) {
-    anchor { 'mongodb::server::start': }->
-    class { 'mongodb::server::install': }->
-    class { 'mongodb::server::config': }->
-    class { 'mongodb::server::service': }->
-    anchor { 'mongodb::server::end': }
+    if $restart {
+      anchor { 'mongodb::server::start': }->
+      class { 'mongodb::server::install': }->
+      # If $restart is true, notify the service on config changes (~>)
+      class { 'mongodb::server::config': }~>
+      class { 'mongodb::server::service': }->
+      anchor { 'mongodb::server::end': }
+    } else {
+      anchor { 'mongodb::server::start': }->
+      class { 'mongodb::server::install': }->
+      # If $restart is false, config changes won't restart the service (->)
+      class { 'mongodb::server::config': }->
+      class { 'mongodb::server::service': }->
+      anchor { 'mongodb::server::end': }
+    }
   } else {
     anchor { 'mongodb::server::start': }->
-    class { 'mongodb::server::service': }->
-    class { 'mongodb::server::config': }->
-    class { 'mongodb::server::install': }->
+    class { '::mongodb::server::service': }->
+    class { '::mongodb::server::config': }->
+    class { '::mongodb::server::install': }->
     anchor { 'mongodb::server::end': }
   }
 }
